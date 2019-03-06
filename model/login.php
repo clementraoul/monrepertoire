@@ -1,60 +1,76 @@
 <?php
-//MODE DEBUG
 
-//print_r($_POST);
-
-//CONNEXION BASE DE DONNEES MYSQL
+//echo !empty($_POST);
+/*
+if(!empty($_POST)){
+	if($utilisateur['mail'] == $_POST['mail']){
+		if($utilisateur['password'] == $_POST['pass']){
+			$msg = "Bien connecté";
+		}
+		else {
+			$msg = "Mot de passe incorrect";
+			$mailTmp = $_POST['mail'];
+		}
+	}
+	else {
+		$msg = "Adresse mail inconnue";
+	}
+}
+*/
 try
 {
-	$db = new PDO('mysql:host=localhost; dbname=e_blog_commerce; charset=utf8', 'root', 'root');
+    $bdd = new PDO('mysql:host=localhost;dbname=blog_e_commerce;charset=utf8', 'root', 'root');
 }
 catch(Exception $e)
 {
-	die('Erreur : '.$e->getMessage());
+        die('Erreur : '.$e->getMessage());
 }
 
-$usertmp = "";
-$msg_error = "";
+$mailTmp="";
+$msg = "";
+//var_dump($_SESSION);
 
-//Si les champs ont été rempli, $_POST n'est donc pas vide
-if(!empty($_POST)) {
-	//On injecte les variables de $_POST dans d'autres variables (Par sécurité)
-	$mail = $_POST['mail'];
-	$pass = $_POST['pass'];
+if(!empty($_POST)){
+    // On récupère le $_POST['mail'] et le $_POST['pass'] envoyés dans le formulaire
+    $mail = $_POST['mail'];
+    $password = $_POST['pass'];
 
-	//On consulte la $db (base de donnée) avec une $req (requête sql)
-	$req = $db->prepare('SELECT id, nom, prenom, mail FROM user WHERE mail= :mail');
-	$req->bindParam(':mail', $mail);
-	$req->execute();
-	$checkmail = $req->fetch();
+    // On regarde si $_POST['mail'] est connu dans la table user
+    $req = $bdd->prepare('SELECT id FROM user WHERE mail= :mail');
+    $req->bindParam(':mail', $mail);
+    $req->execute();
+    // Un fetch n'affiche qu'une seule ligne de la BDD
+    // Un fetchAll affiche toutes les lignes de la BDD
+    // On récupère un objet
+    $result = $req->fetch();
+	// Si oui
+    if(!empty($result)){
+        // On regarde si $_POST['pass'] correspond au pass de $_POST['mail']
+        $req = $bdd->prepare('SELECT id, nom, prenom FROM user WHERE mail= :mail AND password= :password');
+        $req->bindParam(':mail', $mail);
+        $req->bindParam(':password', $password);
+        $req->execute();
+        $result2 = $req->fetch();
 
-	//Si $mail existe dans la $db, $checkmail récupère une id et n'est donc pas "Empty"
-	if (!empty($checkmail)) {
-
-		//On consulte la $db avec une $req (requête sql)
-		$req = $db->prepare('SELECT id, nom, prenom, mail FROM user WHERE mail= :mail AND password= :pass');
-		$req->bindParam(':mail', $mail);
-		$req->bindParam(':pass', $pass);
-		$req->execute();
-		$checkAll = $req->fetch();
-
-		//Si le $mail et le $pass corresponde à l'utilisateur, $checkAll ne sera donc pas vide
-		if (!empty($checkAll)) {
-
-			$_SESSION['id']=$checkAll['id'];
-			$_SESSION['nom']=$checkAll['nom'];
-			$_SESSION['prenom']=$checkAll['prenom'];
-			$_SESSION['mail']=$checkAll['mail'];
+        // Si oui
+        if(!empty($result2)){
+			$_SESSION['id']=$result2['id'];	
+			$_SESSION['name']=$result2['nom'];	
+			$_SESSION['surname']=$result2['prenom'];									
+			$_SESSION['mail']=$mail;
 			header('location: index.php');
-			$msg_error = "Bien connecté";
-			//si le mot de passe ne correspond pas :
-		} else {
-			$msg_error = "Mot de passe incorrect";
-			$usertmp = $_POST['mail'];
-		}
-		//Si $mail n'est pas dans la base de donnée :
-	} else {
-		$msg_error = "Email utilisateur inconnu";
-	}
+            //$msg = "Bien connecté";
+        }
+        else {
+            // Si non
+            $msg = "Mot de passe incorrect";
+            $mailTmp = $_POST['mail'];
+        }
+    }
+    else{
+        // Si non
+        $msg = "Adresse mail inconnue";
+    }
 }
+
 ?>
